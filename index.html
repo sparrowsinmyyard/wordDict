@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Ledger</title>
+    <!-- Load React and Babel directly so it runs instantly without Node.js compilers -->
+    <script src="https://unpkg.com" crossorigin></script>
+    <script src="https://unpkg.com" crossorigin></script>
+    <script src="https://unpkg.com"></script>
+</head>
+<body style="margin:0; padding:0;">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- POLYFILL FOR STORAGE ---
+        // Replaces window.storage with standard browser localStorage
+        window.storage = {
+            list: async (prefix) => {
+                const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
+                return { keys };
+            },
+            get: async (key) => {
+                const val = localStorage.getItem(key);
+                return val ? { value: val } : null;
+            },
+            set: async (key, val) => {
+                localStorage.setItem(key, val);
+            },
+            delete: async (key) => {
+                localStorage.removeItem(key);
+            }
+        };
+
+        const FONT_LINK_ID = "word-ledger-fonts";
+
+        function useFonts() {
+          useEffect(() => {
+            if (document.getElementById(FONT_LINK_ID)) return;
+            const link = document.createElement("link");
+            link.id = FONT_LINK_ID;
+            link.rel = "stylesheet";
+            link.href = "https://googleapis.com";
+            document.head.appendChild(link);
+          }, []);
+        }
+
+        function todayStr() {
+          const d = new Date();
+          return d.toISOString().slice(0, 10);
+        }
+
+        function keyFor(word) {
+          return `word:${word.trim().toLowerCase()}`;
+        }
+
+        async function translateWord(word, context) {
+          const sys = "You translate a single Russian word or a Russian-alphabet phonetic transliteration of an English/foreign word into plain English. Respond ONLY with JSON, no markdown fences, no preamble, in exactly this shape: {\"en\":\"<english meaning, 1-4 words>\",\"note\":\"<optional 3-8 word usage note, or empty string>\"}";
+          const userMsg = context ? `Word: "${word}"\nSentence it appeared in: "${context}"` : `Word: "${word}"`;
+
+          const response = await fetch("https://anthropic.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-6",
+              max_tokens: 1000,
+              system: sys,
+              messages: [{ role: "user", content: userMsg }],
+            }),
+          });
+
+          const data = await response.json();
+          const text = (data.content || []).map((b) => b.text || "").join("").trim();
+          const clean = text.replace(/```json|```/g, "").trim();
+          try {
+            const parsed = JSON.parse(clean);
+            return { en: parsed.en || "?", note: parsed.note || "" };
+          } catch (e) {
+            return { en: clean.slice(0, 60) || "?", note: "" };
+          }
+        }
+
+        function WordLedger() {
+          useFonts();
+
+          const [entries, setEntries] = useState({});
+          const [loaded, setLoaded] = useState(false);
+          const [bulkText, setBulkText] = useState("");
+          const [contextText, setContextText] = useState("");
+          const [processing, setProcessing] = useState(false);
+          const [feed, setFeed] = useState([]);
+          const [search, setSearch] = useState("");
+          const [sortBy, setSortBy] = useState("recent");
+          const [error, setError] = useState("");
+
+          useEffect(() => {
+            (async () => {
+              try {
+                const list = await window.storage.list("word:", false);
+                if (list && list.keys && list.keys.length) {
+                  const map = {};
+                  for (const k of list.keys) {
+                    try {
+                      const r = await window.storage.get(k, false);
+                      if (r) map[k] = JSON.parse(r.value);
+                    } catch (e) {}
+                  }
+                  setEntries(map);
+                }
+              } catch (e) {
+              } finally {
+                setLoaded(true);
+              }
+            })();
+          }, []);
+
+          const list = useMemo(() => Object.values(entries), [entries]);
+
+          const filtered = useMemo(() => {
+            let arr = list;
+            if (search.trim()) {
+              const q = search.trim().toLowerCase();
+              arr = arr.filter(e => e.ru.toLowerCase().includes(q) || e.en.toLowerCase().includes(q));
+            }
+            arr = [...arr];
+            if (sortBy === "recent") {
+              arr.sort((a, b) => (b.lastDate || "").localeCompare(a.lastDate || ""));
+            } else if (sortBy === "oldest") {
+              arr.sort((a, b) => (a.firstDate || "").localeCompare(b.firstDate || ""));
+            } else if (sortBy === "az") {
+              arr.sort((a, b) => a.ru.localeCompare(b.ru));
+            } else if (sortBy === "seen") {
+              arr.sort((a, b) => (b.count || 0) - (a.count || 0));
+            }
+            return arr;
+          }, [list, search, sortBy]);
+
+          async function handleProcess() {
+            setError("");
+            const words = bulkText.split("\n").map(w => w.trim()).filter(Boolean);
+            if (!words.length) return;
+
+            setProcessing(true);
+            const results = [];
+            const updated = { ...entries };
+
+            for (const raw of words) {
+              const word = raw.replace(/^[-•\d.)\s]+/, "").trim();
+              if (!word) continue;
+              const k = keyFor(word);
+              const today = todayStr();
+
+              if (updated[k]) {
+                const prior = updated[k];
+                const next = { ...prior, count: (prior.count || 1) + 1, lastDate: today };
+                updated[k] = next;
+                await window.storage.set(k, JSON.stringify(next));
+                results.push({ ...next, status: "known" });
+              } else {
+                try {
+                  const { en, note } = await translateWord(word, contextText);
+                  const next = { ru: word, en, note, firstDate: today, lastDate: today, count: 1 };
+                  updated[k] = next;
+                  await window.storage.set(k, JSON.stringify(next));
+                  results.push({ ...next, status: "new" });
+                } catch (e) {
+                  results.push({ ru: word, en: "translation failed", status: "error" });
+                }
+              }
+            }
+
+            setEntries(updated);
+            setFeed(results);
+            setBulkText("");
+            setProcessing(false);
+          }
+
+          async function handleDelete(k) {
+            const copy = { ...entries };
+            delete copy[k];
+            setEntries(copy);
+            await window.storage.delete(k);
+          }
+
+          function handleExport() {
+            const rows = [["Russian", "English", "Note", "First learned", "Last seen", "Times seen"]];
+            list.forEach(e => rows.push([e.ru, e.en, e.note || "", e.firstDate, e.lastDate, String(e.count || 1)]));
+            const csv = rows.map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "word-ledger.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+
+          return (
+            <div style={{ minHeight: "100vh", background: "#F3EEE3", backgroundImage: "repeating-linear-gradient(#F3EEE3 0px, #F3EEE3 31px, #C9C2AE 32px)", fontFamily: "'Source Serif 4', serif", color: "#232032", padding: "0" }}>
+              <div style={{ maxWidth: 980, margin: "0 auto", padding: "40px 24px 80px" }}>
+                <header style={{ marginBottom: 36 }}>
+                  <div style={{ fontFamily: "'Kalam', cursive", fontWeight: 700, fontSize: "clamp(32px, 5vw, 48px)", color: "#232032", lineHeight: 1.1, transform: "rotate(-0.6deg)" }}>
+                    слова · word ledger
+                  </div>
+                  <div style={{ fontSize: 14, color: "#6E6858", marginTop: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3 }}>
+                    {loaded ? `${list.length} words logged` : "loading ledger…"}
+                  </div>
+                </header>
+
+                <section style={{ background: "rgba(255,255,255,0.5)", border: "1px solid #C9C2AE", borderRadius: 4, padding: 20, marginBottom: 32 }}>
+                  <label style={{ fontFamily: "'Kalam', cursive", fontSize: 18, fontWeight: 700, display: "block", marginBottom: 8 }}>
+                    Add Words (One per line)
+                  </label>
+                  <textarea 
+                    value={bulkText} 
+                    onChange={(e) => setBulkText(e.target.value)} 
+                    style={{ width: "100%", height: "100px", padding: "8px", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace", border: "1px solid #C9C2AE", borderRadius: 4, background: "#FFFBF5", marginBottom: 12 }} 
+                    placeholder="Привет&#10;Пока"
+                  />
+                  <label style={{ fontFamily: "'Kalam', cursive", fontSize: 16, fontWeight: 700, display: "block", marginBottom: 8 }}>
