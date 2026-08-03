@@ -1,222 +1,502 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Ledger</title>
-    <!-- Load React and Babel directly so it runs instantly without Node.js compilers -->
-    <script src="https://unpkg.com" crossorigin></script>
-    <script src="https://unpkg.com" crossorigin></script>
-    <script src="https://unpkg.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>слова · word ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #F3EEE3;
+    background-image: repeating-linear-gradient(#F3EEE3 0px, #F3EEE3 31px, #C9C2AE 32px);
+    font-family: 'Source Serif 4', serif;
+    color: #232032;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { margin-bottom: 36px; }
+  .title {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.1;
+    transform: rotate(-0.6deg);
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #6E6858;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;
+  }
+  section.panel {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid #C9C2AE;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+  label.block-label {
+    font-family: 'Kalam', cursive;
+    font-size: 18px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .hint { font-size: 13px; color: #6E6858; margin-bottom: 10px; }
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    padding: 10px;
+    border: 1px solid #C9C2AE;
+    border-radius: 3px;
+    background: #FFFDF8;
+    color: #232032;
+  }
+  textarea { resize: vertical; }
+  .context-input {
+    margin-top: 8px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 14px;
+    padding: 8px;
+  }
+  .row { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  button.primary {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 16px;
+    background: #B23A2E;
+    color: #FFFDF8;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  button.primary:disabled { background: #C9C2AE; cursor: default; }
+  .error-text { color: #B23A2E; font-size: 13px; }
+  .feed-title, .ledger-title {
+    font-family: 'Kalam', cursive;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .feed-items { display: flex; flex-wrap: wrap; gap: 10px; }
+  .feed-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    background: #FFFDF8;
+    border: 1px solid #3F6B4A;
+  }
+  .feed-item.new { border: 2px solid #B23A2E; }
+  .feed-item.error { border: 1px dashed #B23A2E; }
+  .feed-item .ru { font-weight: 500; }
+  .feed-item .arrow { color: #6E6858; }
+  .feed-item .tag-known { color: #3F6B4A; margin-left: 8px; }
+  .feed-item .tag-new { color: #B23A2E; margin-left: 8px; font-style: italic; }
+
+  .ledger-header {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+  }
+  .ledger-controls { display: flex; gap: 8px; align-items: center; }
+  .ledger-controls input, .ledger-controls select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid #C9C2AE;
+    border-radius: 3px;
+    background: #FFFDF8;
+  }
+  button.secondary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #6E6858;
+    border-radius: 3px;
+    background: #FFFDF8;
+    cursor: pointer;
+  }
+  button.secondary:disabled { cursor: default; opacity: 0.5; }
+
+  .empty {
+    color: #6E6858; font-style: italic; padding: 20px 0;
+    border-top: 1px solid #C9C2AE;
+  }
+  table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+  thead tr { border-bottom: 2px solid #232032; }
+  th { text-align: left; padding: 6px 10px; font-weight: 500; }
+  tbody tr { border-bottom: 1px solid #C9C2AE; }
+  td { padding: 8px 10px; }
+  td.muted { color: #6E6858; }
+  td.count { text-align: right; color: #3F6B4A; }
+  td.del { text-align: right; }
+  .del-btn { border: none; background: none; color: #B23A2E; cursor: pointer; font-size: 13px; }
+  .table-scroll { overflow-x: auto; }
+
+  details.settings { margin-bottom: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  details.settings summary { cursor: pointer; color: #6E6858; }
+  details.settings .settings-body { margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.5); border: 1px solid #C9C2AE; border-radius: 4px; }
+  .settings-note { color: #6E6858; font-size: 12px; margin-top: 8px; line-height: 1.5; }
+  .loading-msg { color: #6E6858; font-style: italic; }
+</style>
 </head>
-<body style="margin:0; padding:0;">
-    <div id="root"></div>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">слова · word ledger</div>
+    <div class="subtitle" id="wordCount">loading ledger…</div>
+  </header>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+  <details class="settings">
+    <summary>settings — anthropic api key</summary>
+    <div class="settings-body">
+      <label class="block-label" style="font-size:14px;">your Claude API key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-…" />
+      <div class="settings-note">
+        This page calls the Anthropic API straight from your browser to translate words, so your key
+        needs to be entered here rather than kept on a server. It's saved only in this browser's
+        local storage and sent only to api.anthropic.com. Don't use this page on a shared/public
+        computer with a real key, and don't publish a key-embedded copy of this site — anyone visiting
+        could read it from the page source. Get a key at
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+      </div>
+    </div>
+  </details>
 
-        // --- POLYFILL FOR STORAGE ---
-        // Replaces window.storage with standard browser localStorage
-        window.storage = {
-            list: async (prefix) => {
-                const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
-                return { keys };
-            },
-            get: async (key) => {
-                const val = localStorage.getItem(key);
-                return val ? { value: val } : null;
-            },
-            set: async (key, val) => {
-                localStorage.setItem(key, val);
-            },
-            delete: async (key) => {
-                localStorage.removeItem(key);
-            }
-        };
+  <section class="panel">
+    <label class="block-label">paste the words you didn't know</label>
+    <div class="hint">One word per line — Russian or your phonetic guess. Words already in your ledger get marked as revision, not retranslated.</div>
+    <textarea id="bulkText" rows="5" placeholder="термалс&#10;виярин&#10;бамбоо"></textarea>
+    <input type="text" id="contextText" class="context-input" placeholder="optional: paste the sentence for context" />
+    <div class="row">
+      <button class="primary" id="processBtn">check &amp; translate</button>
+      <span class="error-text" id="errorText"></span>
+    </div>
+  </section>
 
-        const FONT_LINK_ID = "word-ledger-fonts";
+  <section id="feedSection" style="display:none; margin-bottom:32px;">
+    <div class="feed-title">just processed</div>
+    <div class="feed-items" id="feedItems"></div>
+  </section>
 
-        function useFonts() {
-          useEffect(() => {
-            if (document.getElementById(FONT_LINK_ID)) return;
-            const link = document.createElement("link");
-            link.id = FONT_LINK_ID;
-            link.rel = "stylesheet";
-            link.href = "https://googleapis.com";
-            document.head.appendChild(link);
-          }, []);
-        }
+  <section>
+    <div class="ledger-header">
+      <div class="ledger-title">the ledger</div>
+      <div class="ledger-controls">
+        <input type="text" id="searchInput" placeholder="search…" />
+        <select id="sortSelect">
+          <option value="recent">last seen</option>
+          <option value="oldest">first learned</option>
+          <option value="az">a → z</option>
+          <option value="seen">most revised</option>
+        </select>
+        <button class="secondary" id="exportBtn">export csv</button>
+      </div>
+    </div>
+    <div id="ledgerBody"></div>
+  </section>
+</div>
 
-        function todayStr() {
-          const d = new Date();
-          return d.toISOString().slice(0, 10);
-        }
+<script>
+(function () {
+  const STORAGE_PREFIX = "wordLedger:";
+  const API_KEY_STORAGE = "wordLedgerApiKey";
 
-        function keyFor(word) {
-          return `word:${word.trim().toLowerCase()}`;
-        }
+  let entries = {};
+  let loaded = false;
+  let feed = [];
+  let processing = false;
 
-        async function translateWord(word, context) {
-          const sys = "You translate a single Russian word or a Russian-alphabet phonetic transliteration of an English/foreign word into plain English. Respond ONLY with JSON, no markdown fences, no preamble, in exactly this shape: {\"en\":\"<english meaning, 1-4 words>\",\"note\":\"<optional 3-8 word usage note, or empty string>\"}";
-          const userMsg = context ? `Word: "${word}"\nSentence it appeared in: "${context}"` : `Word: "${word}"`;
+  const bulkText = document.getElementById("bulkText");
+  const contextText = document.getElementById("contextText");
+  const processBtn = document.getElementById("processBtn");
+  const errorText = document.getElementById("errorText");
+  const wordCount = document.getElementById("wordCount");
+  const feedSection = document.getElementById("feedSection");
+  const feedItems = document.getElementById("feedItems");
+  const searchInput = document.getElementById("searchInput");
+  const sortSelect = document.getElementById("sortSelect");
+  const exportBtn = document.getElementById("exportBtn");
+  const ledgerBody = document.getElementById("ledgerBody");
+  const apiKeyInput = document.getElementById("apiKeyInput");
 
-          const response = await fetch("https://anthropic.com", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "claude-sonnet-4-6",
-              max_tokens: 1000,
-              system: sys,
-              messages: [{ role: "user", content: userMsg }],
-            }),
-          });
+  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || "";
+  apiKeyInput.addEventListener("change", () => {
+    localStorage.setItem(API_KEY_STORAGE, apiKeyInput.value.trim());
+  });
 
-          const data = await response.json();
-          const text = (data.content || []).map((b) => b.text || "").join("").trim();
-          const clean = text.replace(/```json|```/g, "").trim();
-          try {
-            const parsed = JSON.parse(clean);
-            return { en: parsed.en || "?", note: parsed.note || "" };
-          } catch (e) {
-            return { en: clean.slice(0, 60) || "?", note: "" };
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function keyFor(word) {
+    return STORAGE_PREFIX + word.trim().toLowerCase();
+  }
+
+  function loadEntries() {
+    entries = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf(STORAGE_PREFIX) === 0) {
+        try {
+          entries[k] = JSON.parse(localStorage.getItem(k));
+        } catch (e) { /* skip bad entry */ }
+      }
+    }
+    loaded = true;
+  }
+
+  function saveEntry(k, value) {
+    localStorage.setItem(k, JSON.stringify(value));
+  }
+
+  function deleteEntry(k) {
+    localStorage.removeItem(k);
+  }
+
+  async function translateWord(word, context) {
+    const apiKey = localStorage.getItem(API_KEY_STORAGE);
+    if (!apiKey) {
+      throw new Error("no-api-key");
+    }
+    const sys =
+      "You translate a single Russian word or a Russian-alphabet phonetic transliteration of an English/foreign word into plain English. " +
+      "Respond ONLY with JSON, no markdown fences, no preamble, in exactly this shape: " +
+      '{"en":"<english meaning, 1-4 words>","note":"<optional 3-8 word usage note, or empty string>"}';
+    const userMsg = context
+      ? `Word: "${word}"\nSentence it appeared in: "${context}"`
+      : `Word: "${word}"`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 1000,
+        system: sys,
+        messages: [{ role: "user", content: userMsg }],
+      }),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error.message || "api-error");
+    }
+    const text = (data.content || [])
+      .map((b) => b.text || "")
+      .join("")
+      .trim();
+    const clean = text.replace(/```json|```/g, "").trim();
+    try {
+      const parsed = JSON.parse(clean);
+      return { en: parsed.en || "?", note: parsed.note || "" };
+    } catch (e) {
+      return { en: clean.slice(0, 60) || "?", note: "" };
+    }
+  }
+
+  function getList() {
+    return Object.values(entries);
+  }
+
+  function getFiltered() {
+    let arr = getList();
+    const q = searchInput.value.trim().toLowerCase();
+    if (q) {
+      arr = arr.filter(
+        (e) => e.ru.toLowerCase().includes(q) || e.en.toLowerCase().includes(q)
+      );
+    }
+    arr = [...arr];
+    const sortBy = sortSelect.value;
+    if (sortBy === "recent") {
+      arr.sort((a, b) => (b.lastDate || "").localeCompare(a.lastDate || ""));
+    } else if (sortBy === "oldest") {
+      arr.sort((a, b) => (a.firstDate || "").localeCompare(b.firstDate || ""));
+    } else if (sortBy === "az") {
+      arr.sort((a, b) => a.ru.localeCompare(b.ru));
+    } else if (sortBy === "seen") {
+      arr.sort((a, b) => (b.count || 0) - (a.count || 0));
+    }
+    return arr;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function renderCount() {
+    wordCount.textContent = loaded ? `${getList().length} words logged` : "loading ledger…";
+  }
+
+  function renderFeed() {
+    if (!feed.length) {
+      feedSection.style.display = "none";
+      return;
+    }
+    feedSection.style.display = "";
+    feedItems.innerHTML = feed.map((f) => {
+      const cls = f.status === "new" ? "new" : f.status === "error" ? "error" : "";
+      let tag = "";
+      if (f.status === "known") tag = `<span class="tag-known">✓ seen ×${f.count}</span>`;
+      if (f.status === "new") tag = `<span class="tag-new">new</span>`;
+      return `<div class="feed-item ${cls}">
+        <span class="ru">${escapeHtml(f.ru)}</span>
+        <span class="arrow"> → </span>
+        <span>${escapeHtml(f.en)}</span>
+        ${tag}
+      </div>`;
+    }).join("");
+  }
+
+  function renderLedger() {
+    const list = getList();
+    const filtered = getFiltered();
+
+    if (!loaded) {
+      ledgerBody.innerHTML = `<div class="loading-msg">loading…</div>`;
+      return;
+    }
+    if (filtered.length === 0) {
+      ledgerBody.innerHTML = `<div class="empty">${
+        list.length === 0
+          ? "Empty page. Paste your first batch of words above."
+          : "No matches for that search."
+      }</div>`;
+      return;
+    }
+
+    const rows = filtered.map((e) => `
+      <tr>
+        <td>${escapeHtml(e.ru)}</td>
+        <td>${escapeHtml(e.en)}${e.note ? ` <span class="muted">— ${escapeHtml(e.note)}</span>` : ""}</td>
+        <td class="muted">${escapeHtml(e.firstDate)}</td>
+        <td class="muted">${escapeHtml(e.lastDate)}</td>
+        <td class="count">×${e.count || 1}</td>
+        <td class="del"><button class="del-btn" data-key="${escapeHtml(keyFor(e.ru))}" title="remove">✕</button></td>
+      </tr>
+    `).join("");
+
+    ledgerBody.innerHTML = `
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ru</th><th>en</th><th>first learned</th><th>last seen</th>
+              <th style="text-align:right;">seen</th><th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+    ledgerBody.querySelectorAll(".del-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const k = btn.getAttribute("data-key");
+        delete entries[k];
+        deleteEntry(k);
+        renderAll();
+      });
+    });
+  }
+
+  function renderAll() {
+    renderCount();
+    renderFeed();
+    renderLedger();
+    exportBtn.disabled = getList().length === 0;
+  }
+
+  async function handleProcess() {
+    errorText.textContent = "";
+    const words = bulkText.value.split("\n").map((w) => w.trim()).filter(Boolean);
+    if (!words.length) return;
+
+    if (!localStorage.getItem(API_KEY_STORAGE)) {
+      errorText.textContent = "Add your Anthropic API key in settings above to translate new words.";
+      return;
+    }
+
+    processing = true;
+    processBtn.disabled = true;
+    processBtn.textContent = "checking the ledger…";
+
+    const results = [];
+
+    for (const raw of words) {
+      const word = raw.replace(/^[-•\d.)\s]+/, "").trim();
+      if (!word) continue;
+      const k = keyFor(word);
+      const today = todayStr();
+
+      if (entries[k]) {
+        const prior = entries[k];
+        const next = { ...prior, count: (prior.count || 1) + 1, lastDate: today };
+        entries[k] = next;
+        saveEntry(k, next);
+        results.push({ ...next, status: "known" });
+      } else {
+        try {
+          const { en, note } = await translateWord(word, contextText.value);
+          const next = { ru: word, en, note, firstDate: today, lastDate: today, count: 1 };
+          entries[k] = next;
+          saveEntry(k, next);
+          results.push({ ...next, status: "new" });
+        } catch (e) {
+          results.push({ ru: word, en: "translation failed", status: "error" });
+          if (e && e.message && e.message !== "no-api-key") {
+            errorText.textContent = "Some words failed to translate. Check your API key and try again.";
           }
         }
+      }
+    }
 
-        function WordLedger() {
-          useFonts();
+    feed = results;
+    bulkText.value = "";
+    processing = false;
+    processBtn.disabled = false;
+    processBtn.textContent = "check & translate";
+    renderAll();
+  }
 
-          const [entries, setEntries] = useState({});
-          const [loaded, setLoaded] = useState(false);
-          const [bulkText, setBulkText] = useState("");
-          const [contextText, setContextText] = useState("");
-          const [processing, setProcessing] = useState(false);
-          const [feed, setFeed] = useState([]);
-          const [search, setSearch] = useState("");
-          const [sortBy, setSortBy] = useState("recent");
-          const [error, setError] = useState("");
+  function handleExport() {
+    const rows = [["Russian", "English", "Note", "First learned", "Last seen", "Times seen"]];
+    getList().forEach((e) =>
+      rows.push([e.ru, e.en, e.note || "", e.firstDate, e.lastDate, String(e.count || 1)])
+    );
+    const csv = rows
+      .map((r) => r.map((c) => `"${(c || "").toString().replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "word-ledger.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
-          useEffect(() => {
-            (async () => {
-              try {
-                const list = await window.storage.list("word:", false);
-                if (list && list.keys && list.keys.length) {
-                  const map = {};
-                  for (const k of list.keys) {
-                    try {
-                      const r = await window.storage.get(k, false);
-                      if (r) map[k] = JSON.parse(r.value);
-                    } catch (e) {}
-                  }
-                  setEntries(map);
-                }
-              } catch (e) {
-              } finally {
-                setLoaded(true);
-              }
-            })();
-          }, []);
+  processBtn.addEventListener("click", handleProcess);
+  exportBtn.addEventListener("click", handleExport);
+  searchInput.addEventListener("input", renderLedger);
+  sortSelect.addEventListener("change", renderLedger);
 
-          const list = useMemo(() => Object.values(entries), [entries]);
-
-          const filtered = useMemo(() => {
-            let arr = list;
-            if (search.trim()) {
-              const q = search.trim().toLowerCase();
-              arr = arr.filter(e => e.ru.toLowerCase().includes(q) || e.en.toLowerCase().includes(q));
-            }
-            arr = [...arr];
-            if (sortBy === "recent") {
-              arr.sort((a, b) => (b.lastDate || "").localeCompare(a.lastDate || ""));
-            } else if (sortBy === "oldest") {
-              arr.sort((a, b) => (a.firstDate || "").localeCompare(b.firstDate || ""));
-            } else if (sortBy === "az") {
-              arr.sort((a, b) => a.ru.localeCompare(b.ru));
-            } else if (sortBy === "seen") {
-              arr.sort((a, b) => (b.count || 0) - (a.count || 0));
-            }
-            return arr;
-          }, [list, search, sortBy]);
-
-          async function handleProcess() {
-            setError("");
-            const words = bulkText.split("\n").map(w => w.trim()).filter(Boolean);
-            if (!words.length) return;
-
-            setProcessing(true);
-            const results = [];
-            const updated = { ...entries };
-
-            for (const raw of words) {
-              const word = raw.replace(/^[-•\d.)\s]+/, "").trim();
-              if (!word) continue;
-              const k = keyFor(word);
-              const today = todayStr();
-
-              if (updated[k]) {
-                const prior = updated[k];
-                const next = { ...prior, count: (prior.count || 1) + 1, lastDate: today };
-                updated[k] = next;
-                await window.storage.set(k, JSON.stringify(next));
-                results.push({ ...next, status: "known" });
-              } else {
-                try {
-                  const { en, note } = await translateWord(word, contextText);
-                  const next = { ru: word, en, note, firstDate: today, lastDate: today, count: 1 };
-                  updated[k] = next;
-                  await window.storage.set(k, JSON.stringify(next));
-                  results.push({ ...next, status: "new" });
-                } catch (e) {
-                  results.push({ ru: word, en: "translation failed", status: "error" });
-                }
-              }
-            }
-
-            setEntries(updated);
-            setFeed(results);
-            setBulkText("");
-            setProcessing(false);
-          }
-
-          async function handleDelete(k) {
-            const copy = { ...entries };
-            delete copy[k];
-            setEntries(copy);
-            await window.storage.delete(k);
-          }
-
-          function handleExport() {
-            const rows = [["Russian", "English", "Note", "First learned", "Last seen", "Times seen"]];
-            list.forEach(e => rows.push([e.ru, e.en, e.note || "", e.firstDate, e.lastDate, String(e.count || 1)]));
-            const csv = rows.map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "word-ledger.csv";
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-
-          return (
-            <div style={{ minHeight: "100vh", background: "#F3EEE3", backgroundImage: "repeating-linear-gradient(#F3EEE3 0px, #F3EEE3 31px, #C9C2AE 32px)", fontFamily: "'Source Serif 4', serif", color: "#232032", padding: "0" }}>
-              <div style={{ maxWidth: 980, margin: "0 auto", padding: "40px 24px 80px" }}>
-                <header style={{ marginBottom: 36 }}>
-                  <div style={{ fontFamily: "'Kalam', cursive", fontWeight: 700, fontSize: "clamp(32px, 5vw, 48px)", color: "#232032", lineHeight: 1.1, transform: "rotate(-0.6deg)" }}>
-                    слова · word ledger
-                  </div>
-                  <div style={{ fontSize: 14, color: "#6E6858", marginTop: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3 }}>
-                    {loaded ? `${list.length} words logged` : "loading ledger…"}
-                  </div>
-                </header>
-
-                <section style={{ background: "rgba(255,255,255,0.5)", border: "1px solid #C9C2AE", borderRadius: 4, padding: 20, marginBottom: 32 }}>
-                  <label style={{ fontFamily: "'Kalam', cursive", fontSize: 18, fontWeight: 700, display: "block", marginBottom: 8 }}>
-                    Add Words (One per line)
-                  </label>
-                  <textarea 
-                    value={bulkText} 
-                    onChange={(e) => setBulkText(e.target.value)} 
-                    style={{ width: "100%", height: "100px", padding: "8px", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace", border: "1px solid #C9C2AE", borderRadius: 4, background: "#FFFBF5", marginBottom: 12 }} 
-                    placeholder="Привет&#10;Пока"
-                  />
-                  <label style={{ fontFamily: "'Kalam', cursive", fontSize: 16, fontWeight: 700, display: "block", marginBottom: 8 }}>
+  loadEntries();
+  renderAll();
+})();
+</script>
+</body>
+</html>
