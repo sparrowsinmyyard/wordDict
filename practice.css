@@ -1,0 +1,72 @@
+/* ===== Practice Mode ===== */
+
+.practice-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.25);
+    backdrop-filter:blur(5px);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.practice-overlay.show{
+    display:flex;
+}
+
+.practice-modal{
+    width:min(500px,90vw);
+    background:#F3EEE3;
+    border:1px solid #C9C2AE;
+    border-radius:6px;
+    padding:26px;
+    box-shadow:0 15px 40px rgba(0,0,0,.18);
+}
+
+.practice-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.practice-title{
+    font-family:'JetBrains Mono', monospace;
+    font-size:28px;
+    font-weight:700;
+}
+
+.practice-close{
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:22px;
+}
+
+.practice-card{
+    text-align:center;
+    padding:28px 0;
+}
+
+.practice-word{
+    font-family:'Kalam',cursive;
+    font-size:34px;
+    font-weight:700;
+}
+
+.practice-arrow{
+    margin:12px 0;
+    color:#6E6858;
+}
+
+.practice-translation{
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+}
+
+.practice-controls{
+    display:flex;
+    justify-content:space-between;
+    margin-top:24px;
+}

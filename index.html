@@ -1,209 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="stylesheet" href="practice.css">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>слова · word ledger</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" />
+
+<!-- Firebase (compat build — works as plain global scripts, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: #F3EEE3;
-    background-image: repeating-linear-gradient(#F3EEE3 0px, #F3EEE3 31px, #C9C2AE 32px);
-    font-family: 'Source Serif 4', serif;
-    color: #232032;
-  }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
-  header { margin-bottom: 36px; }
-  .title {
-    font-family: 'Kalam', cursive;
-    font-weight: 700;
-    font-size: clamp(32px, 5vw, 48px);
-    line-height: 1.1;
-    transform: rotate(-0.6deg);
-  }
-  .subtitle {
-    font-size: 14px;
-    color: #6E6858;
-    margin-top: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.3px;
-  }
-  section.panel {
-    background: rgba(255,255,255,0.5);
-    border: 1px solid #C9C2AE;
-    border-radius: 4px;
-    padding: 20px;
-    margin-bottom: 32px;
-  }
-  label.block-label {
-    font-family: 'Kalam', cursive;
-    font-size: 18px;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 8px;
-  }
-  .hint { font-size: 13px; color: #6E6858; margin-bottom: 14px; }
-  textarea, input[type="text"] {
-    width: 100%;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
-    padding: 10px;
-    border: 1px solid #C9C2AE;
-    border-radius: 3px;
-    background: #FFFDF8;
-    color: #232032;
-  }
-  textarea { resize: vertical; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #F3EEE3;
+  background-image: repeating-linear-gradient(#F3EEE3 0px, #F3EEE3 31px, #C9C2AE 32px);
+  font-family: 'Source Serif 4', serif;
+  color: #232032;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+header { margin-bottom: 36px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.title {
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1.1;
+  transform: rotate(-0.6deg);
+}
+.subtitle {
+  font-size: 14px;
+  color: #6E6858;
+  margin-top: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.3px;
+}
+section.panel {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid #C9C2AE;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+label.block-label {
+  font-family: 'Kalam', cursive;
+  font-size: 18px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 8px;
+}
+.hint { font-size: 13px; color: #6E6858; margin-bottom: 14px; }
+textarea, input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  padding: 10px;
+  border: 1px solid #C9C2AE;
+  border-radius: 3px;
+  background: #FFFDF8;
+  color: #232032;
+}
+textarea { resize: vertical; }
+.quick-add { display: flex; gap: 10px; flex-wrap: wrap; }
+.quick-add input { flex: 1 1 200px; }
+.divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0; color: #6E6858; font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.divider::before, .divider::after {
+  content: ""; flex: 1; height: 1px; background: #C9C2AE;
+}
+.row { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+button.primary {
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
+  font-size: 16px;
+  background: #B23A2E;
+  color: #FFFDF8;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+button.primary:disabled { background: #C9C2AE; cursor: default; }
+.error-text { color: #B23A2E; font-size: 13px; }
+.feed-title, .ledger-title {
+  font-family: 'Kalam', cursive;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.feed-items { display: flex; flex-wrap: wrap; gap: 10px; }
+.feed-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 3px;
+  background: #FFFDF8;
+  border: 1px solid #3F6B4A;
+}
+.feed-item.new { border: 2px solid #B23A2E; }
+.feed-item .ru { font-weight: 500; }
+.feed-item .arrow { color: #6E6858; }
+.feed-item .tag-known { color: #3F6B4A; margin-left: 8px; }
+.feed-item .tag-new { color: #B23A2E; margin-left: 8px; font-style: italic; }
+.ledger-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+}
+.ledger-controls { display: flex; gap: 8px; align-items: center; }
+.ledger-controls input, .ledger-controls select {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid #C9C2AE;
+  border-radius: 3px;
+  background: #FFFDF8;
+}
+button.secondary {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid #6E6858;
+  border-radius: 3px;
+  background: #FFFDF8;
+  cursor: pointer;
+}
+button.secondary:disabled { cursor: default; opacity: 0.5; }
+.empty {
+  color: #6E6858; font-style: italic; padding: 20px 0;
+  border-top: 1px solid #C9C2AE;
+}
+table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+thead tr { border-bottom: 2px solid #232032; }
+th { text-align: left; padding: 6px 10px; font-weight: 500; }
+tbody tr { border-bottom: 1px solid #C9C2AE; }
+td { padding: 8px 10px; }
+td.muted { color: #6E6858; }
+td.count { text-align: right; color: #3F6B4A; }
+td.del { text-align: right; }
+.del-btn { border: none; background: none; color: #B23A2E; cursor: pointer; font-size: 13px; }
+.table-scroll { overflow-x: auto; }
+.loading-msg { color: #6E6858; font-style: italic; }
 
-  .quick-add { display: flex; gap: 10px; flex-wrap: wrap; }
-  .quick-add input { flex: 1 1 200px; }
-
-  .divider {
-    display: flex; align-items: center; gap: 10px;
-    margin: 18px 0; color: #6E6858; font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .divider::before, .divider::after {
-    content: ""; flex: 1; height: 1px; background: #C9C2AE;
-  }
-
-  .row { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
-  button.primary {
-    font-family: 'Kalam', cursive;
-    font-weight: 700;
-    font-size: 16px;
-    background: #B23A2E;
-    color: #FFFDF8;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 20px;
-    cursor: pointer;
-  }
-  button.primary:disabled { background: #C9C2AE; cursor: default; }
-  .error-text { color: #B23A2E; font-size: 13px; }
-  .feed-title, .ledger-title {
-    font-family: 'Kalam', cursive;
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-  .feed-items { display: flex; flex-wrap: wrap; gap: 10px; }
-  .feed-item {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    padding: 8px 12px;
-    border-radius: 3px;
-    background: #FFFDF8;
-    border: 1px solid #3F6B4A;
-  }
-  .feed-item.new { border: 2px solid #B23A2E; }
-  .feed-item .ru { font-weight: 500; }
-  .feed-item .arrow { color: #6E6858; }
-  .feed-item .tag-known { color: #3F6B4A; margin-left: 8px; }
-  .feed-item .tag-new { color: #B23A2E; margin-left: 8px; font-style: italic; }
-
-  .ledger-header {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
-  }
-  .ledger-controls { display: flex; gap: 8px; align-items: center; }
-  .ledger-controls input, .ledger-controls select {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    padding: 6px 8px;
-    border: 1px solid #C9C2AE;
-    border-radius: 3px;
-    background: #FFFDF8;
-  }
-  button.secondary {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    padding: 6px 10px;
-    border: 1px solid #6E6858;
-    border-radius: 3px;
-    background: #FFFDF8;
-    cursor: pointer;
-  }
-  button.secondary:disabled { cursor: default; opacity: 0.5; }
-
-  .empty {
-    color: #6E6858; font-style: italic; padding: 20px 0;
-    border-top: 1px solid #C9C2AE;
-  }
-  table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-  thead tr { border-bottom: 2px solid #232032; }
-  th { text-align: left; padding: 6px 10px; font-weight: 500; }
-  tbody tr { border-bottom: 1px solid #C9C2AE; }
-  td { padding: 8px 10px; }
-  td.muted { color: #6E6858; }
-  td.count { text-align: right; color: #3F6B4A; }
-  td.del { text-align: right; }
-  .del-btn { border: none; background: none; color: #B23A2E; cursor: pointer; font-size: 13px; }
-  .table-scroll { overflow-x: auto; }
-  .loading-msg { color: #6E6858; font-style: italic; }
+/* --- auth screen --- */
+#authScreen {
+  max-width: 380px; margin: 80px auto; padding: 24px;
+  background: rgba(255,255,255,0.6); border: 1px solid #C9C2AE; border-radius: 4px;
+}
+#authScreen .title { font-size: 32px; margin-bottom: 4px; }
+#authScreen .hint { margin-bottom: 18px; }
+#authScreen label { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E6858; display: block; margin: 10px 0 4px; }
+#authScreen .row { margin-top: 16px; justify-content: space-between; }
+.link-btn { background: none; border: none; color: #3F6B4A; text-decoration: underline; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 0; }
+.account-bar { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E6858; display: flex; gap: 10px; align-items: center; }
+.sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #C9C2AE; margin-right: 4px; }
+.sync-dot.ok { background: #3F6B4A; }
+.sync-dot.err { background: #B23A2E; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+
+<!-- ============ LOGIN / SIGNUP SCREEN ============ -->
+<div id="authScreen">
+  <div class="title">слова</div>
+  <div class="hint" id="authHint">sign in to sync your ledger across every device.</div>
+  <label for="authEmail">email</label>
+  <input type="email" id="authEmail" placeholder="you@example.com" />
+  <label for="authPassword">password</label>
+  <input type="password" id="authPassword" placeholder="••••••••" />
+  <div class="row">
+    <button class="primary" id="authSubmitBtn">sign in</button>
+    <button class="link-btn" id="authSwitchBtn">need an account? sign up</button>
+  </div>
+  <div class="error-text" id="authError" style="margin-top:10px;"></div>
+</div>
+
+<!-- ============ MAIN APP (hidden until signed in) ============ -->
+<div class="wrap" id="appContent" style="display:none;">
+<header>
+  <div>
     <div class="title">слова · word ledger</div>
     <div class="subtitle" id="wordCount">loading ledger…</div>
-  </header>
+  </div>
+  <div class="account-bar">
+    <span><span class="sync-dot" id="syncDot"></span><span id="syncLabel">connecting…</span></span>
+    <span id="accountEmail"></span>
+    <button class="link-btn" id="signOutBtn">sign out</button>
+  </div>
+</header>
 
-  <section class="panel">
-    <label class="block-label">log a word</label>
-    <div class="hint">heya! learned a new word? or read one you didn't know the meaning of? log it here and create your own mini dictionary :)</div>
+<section class="panel">
+  <label class="block-label">log a word</label>
+  <div class="hint">heya! learned a new word? or read one you didn't know the meaning of? log it here and create your own mini dictionary :)</div>
+  <div class="quick-add">
+    <input type="text" id="wordInput" placeholder="word — e.g. cake" />
+    <input type="text" id="translationInput" placeholder="your translation — e.g. tort" />
+    <button class="primary" id="addBtn">add to ledger</button>
+  </div>
+  <div class="divider">or add several at once</div>
+  <div class="hint" style="margin-bottom:8px;">format for adding multiple- one pair per line, separated by a comma or dash works too — e.g. <code>cake, tort</code> or <code>cake - tort</code>. if a word is already in your ledger, it just gets marked as revised. (well done!)</div>
+  <textarea id="bulkText" rows="4" placeholder="cake, tort&#10;window - okno&#10;dog, sobaka"></textarea>
+  <div class="row">
+    <button class="primary" id="processBtn">add batch</button>
+    <span class="error-text" id="errorText"></span>
+  </div>
+</section>
 
-    <div class="quick-add">
-      <input type="text" id="wordInput" placeholder="word — e.g. cake" />
-      <input type="text" id="translationInput" placeholder="your translation — e.g. tort" />
-      <button class="primary" id="addBtn">add to ledger</button>
+<section id="feedSection" style="display:none; margin-bottom:32px;">
+  <div class="feed-title">just added</div>
+  <div class="feed-items" id="feedItems"></div>
+</section>
+
+<section>
+  <div class="ledger-header">
+    <div class="ledger-title">the ledger</div>
+    <div class="ledger-controls">
+      <input type="text" id="searchInput" placeholder="search…" />
+      <select id="sortSelect">
+        <option value="recent">last seen</option>
+        <option value="oldest">first learned</option>
+        <option value="az">a → z</option>
+        <option value="seen">most revised</option>
+      </select>
+<button class="secondary" id="exportBtn">export csv</button>
+<button class="secondary" id="importBtn">import csv</button>
+<button class="secondary" onclick="openPractice()">practice</button>
+<input type="file" id="importFile" accept=".csv" style="display:none;">
     </div>
-
-    <div class="divider">or add several at once</div>
-
-    <div class="hint" style="margin-bottom:8px;">format for adding multiple- one pair per line, separated by a comma or dash works too — e.g. <code>cake, tort</code> or <code>cake - tort</code>. if a word is already in your ledger, it just gets marked as revised. (well done!)</div>
-    <textarea id="bulkText" rows="4" placeholder="cake, tort&#10;window - okno&#10;dog, sobaka"></textarea>
-    <div class="row">
-      <button class="primary" id="processBtn">add batch</button>
-      <span class="error-text" id="errorText"></span>
-    </div>
-  </section>
-
-  <section id="feedSection" style="display:none; margin-bottom:32px;">
-    <div class="feed-title">just added</div>
-    <div class="feed-items" id="feedItems"></div>
-  </section>
-
-  <section>
-    <div class="ledger-header">
-      <div class="ledger-title">the ledger</div>
-      <div class="ledger-controls">
-        <input type="text" id="searchInput" placeholder="search…" />
-        <select id="sortSelect">
-          <option value="recent">last seen</option>
-          <option value="oldest">first learned</option>
-          <option value="az">a → z</option>
-          <option value="seen">most revised</option>
-        </select>
-        <button class="secondary" id="exportBtn">export csv</button>
-      </div>
-    </div>
-    <div id="ledgerBody"></div>
-  </section>
+  </div>
+  <div id="ledgerBody"></div>
+</section>
 </div>
 
 <script>
-(function () {
-  const STORAGE_PREFIX = "wordLedger:";
+// =========================================================================
+// FIREBASE SETUP — fill this in with YOUR project's config
+// (Firebase console → Project settings → General → "Your apps" → SDK config)
+// =========================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCoD8mFvZJUe-Ql_mntFzZaPGHnsd38Hz4",
+  authDomain: "word-ledger-afb12.firebaseapp.com",
+  projectId: "word-ledger-afb12",
+  storageBucket: "word-ledger-afb12.firebasestorage.app",
+  messagingSenderId: "315996162276",
+  appId: "1:315996162276:web:74be334dcb1373c6c744f1"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
+(function () {
   let entries = {};
   let loaded = false;
   let feed = [];
+  let unsubscribeSnapshot = null;
 
+  // ---- DOM refs: app ----
   const wordInput = document.getElementById("wordInput");
   const translationInput = document.getElementById("translationInput");
   const addBtn = document.getElementById("addBtn");
@@ -216,55 +273,104 @@
   const searchInput = document.getElementById("searchInput");
   const sortSelect = document.getElementById("sortSelect");
   const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
   const ledgerBody = document.getElementById("ledgerBody");
+  const appContent = document.getElementById("appContent");
+  const accountEmail = document.getElementById("accountEmail");
+  const signOutBtn = document.getElementById("signOutBtn");
+  const syncDot = document.getElementById("syncDot");
+  const syncLabel = document.getElementById("syncLabel");
+
+  // ---- DOM refs: auth screen ----
+  const authScreen = document.getElementById("authScreen");
+  const authEmail = document.getElementById("authEmail");
+  const authPassword = document.getElementById("authPassword");
+  const authSubmitBtn = document.getElementById("authSubmitBtn");
+  const authSwitchBtn = document.getElementById("authSwitchBtn");
+  const authError = document.getElementById("authError");
+  const authHint = document.getElementById("authHint");
+  let authMode = "signin"; // or "signup"
 
   function todayStr() {
     return new Date().toISOString().slice(0, 10);
   }
 
+  // Firestore doc IDs can't contain "/" — sanitize just in case.
   function keyFor(word) {
-    return STORAGE_PREFIX + word.trim().toLowerCase();
+    return word.trim().toLowerCase().replace(/\//g, "_");
   }
 
-  function loadEntries() {
-    entries = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.indexOf(STORAGE_PREFIX) === 0) {
-        try {
-          entries[k] = JSON.parse(localStorage.getItem(k));
-        } catch (e) { /* skip bad entry */ }
+  function wordsCollection() {
+    const uid = auth.currentUser.uid;
+    return db.collection("users").doc(uid).collection("words");
+  }
+
+  function setSyncStatus(state) {
+    syncDot.className = "sync-dot" + (state === "ok" ? " ok" : state === "err" ? " err" : "");
+    syncLabel.textContent = state === "ok" ? "synced" : state === "err" ? "sync error" : "connecting…";
+  }
+
+  // Live-subscribes to this user's word collection. Fires on first load
+  // AND whenever data changes on ANY device signed into this account.
+  function startListening() {
+    loaded = false;
+    renderAll();
+    unsubscribeSnapshot = wordsCollection().onSnapshot(
+      (snapshot) => {
+        entries = {};
+        snapshot.forEach((doc) => { entries[doc.id] = doc.data(); });
+        loaded = true;
+        setSyncStatus("ok");
+        renderAll();
+      },
+      (err) => {
+        console.error("Firestore sync error:", err);
+        setSyncStatus("err");
       }
-    }
-    loaded = true;
+    );
   }
 
-  function saveEntry(k, value) {
-    localStorage.setItem(k, JSON.stringify(value));
+  function stopListening() {
+    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    entries = {};
+    loaded = false;
   }
 
-  function deleteEntry(k) {
-    localStorage.removeItem(k);
+  async function saveEntry(k, value) {
+    await wordsCollection().doc(k).set(value);
+    // no local mutation needed — onSnapshot will push the update back to us
+  }
+
+  async function deleteEntry(k) {
+    await wordsCollection().doc(k).delete();
   }
 
   // Adds or revises a single word/translation pair. Returns the feed result.
-  function addPair(word, translation) {
+  // Optimistically updates the local view, then writes to Firestore.
+  async function addPair(word, translation) {
     const k = keyFor(word);
     const today = todayStr();
+    let result;
     if (entries[k]) {
       const prior = entries[k];
       const next = { ...prior, count: (prior.count || 1) + 1, lastDate: today };
-      // allow updating the translation if they typed a new one
       if (translation) next.en = translation;
       entries[k] = next;
-      saveEntry(k, next);
-      return { ...next, status: "known" };
+      result = { ...next, status: "known" };
     } else {
       const next = { ru: word, en: translation || "?", note: "", firstDate: today, lastDate: today, count: 1 };
       entries[k] = next;
-      saveEntry(k, next);
-      return { ...next, status: "new" };
+      result = { ...next, status: "new" };
     }
+    renderAll(); // optimistic UI update
+    try {
+      await saveEntry(k, entries[k]);
+    } catch (e) {
+      console.error("Save failed:", e);
+      setSyncStatus("err");
+    }
+    return result;
   }
 
   function getList() {
@@ -331,6 +437,7 @@
       ledgerBody.innerHTML = `<div class="loading-msg">loading…</div>`;
       return;
     }
+
     if (filtered.length === 0) {
       ledgerBody.innerHTML = `<div class="empty">${
         list.length === 0
@@ -347,7 +454,7 @@
         <td class="muted">${escapeHtml(e.firstDate)}</td>
         <td class="muted">${escapeHtml(e.lastDate)}</td>
         <td class="count">×${e.count || 1}</td>
-        <td class="del"><button class="del-btn" data-key="${escapeHtml(keyFor(e.ru))}" title="remove">✕</button></td>
+        <td class="del"><button class="del-btn" data-key="${escapeHtml(keyFor(e.ru))}" title="remove" aria-label="remove ${escapeHtml(e.ru)}">✕</button></td>
       </tr>
     `).join("");
 
@@ -365,14 +472,26 @@
       </div>
     `;
 
-    ledgerBody.querySelectorAll(".del-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const k = btn.getAttribute("data-key");
-        delete entries[k];
-        deleteEntry(k);
-        renderAll();
-      });
-    });
+ledgerBody.querySelectorAll(".del-btn").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const k = btn.getAttribute("data-key");
+    const word = entries[k]?.ru || "this word";
+
+    const confirmed = confirm(`Delete "${word}" from your ledger?`);
+
+    if (!confirmed) return;
+
+    delete entries[k];
+    renderAll();
+
+    try {
+      await deleteEntry(k);
+    } catch (e) {
+      console.error("Delete failed:", e);
+      setSyncStatus("err");
+    }
+  });
+});
   }
 
   function renderAll() {
@@ -380,9 +499,11 @@
     renderFeed();
     renderLedger();
     exportBtn.disabled = getList().length === 0;
+    window.entries = entries;
+    window.saveEntry = saveEntry;
   }
 
-  function handleQuickAdd() {
+  async function handleQuickAdd() {
     errorText.textContent = "";
     const word = wordInput.value.trim();
     const translation = translationInput.value.trim();
@@ -394,7 +515,7 @@
       errorText.textContent = "Add a translation for a new word.";
       return;
     }
-    const result = addPair(word, translation);
+    const result = await addPair(word, translation);
     feed = [result];
     wordInput.value = "";
     translationInput.value = "";
@@ -402,7 +523,7 @@
     renderAll();
   }
 
-  function handleBatch() {
+  async function handleBatch() {
     errorText.textContent = "";
     const lines = bulkText.value.split("\n").map((l) => l.trim()).filter(Boolean);
     if (!lines.length) return;
@@ -419,7 +540,7 @@
         skipped++;
         continue;
       }
-      results.push(addPair(word, translation));
+      results.push(await addPair(word, translation));
     }
 
     feed = results;
@@ -447,16 +568,135 @@
     URL.revokeObjectURL(url);
   }
 
+async function handleImport(file) {
+  const text = await file.text();
+
+  const rows = text
+    .trim()
+    .split(/\r?\n/)
+    .map(line =>
+      line
+        .split('","')
+        .map((cell, i, arr) => {
+          if (i === 0) cell = cell.replace(/^"/, "");
+          if (i === arr.length - 1) cell = cell.replace(/"$/, "");
+          return cell.replace(/""/g, '"');
+        })
+    );
+
+  if (rows.length <= 1) return;
+
+  // Skip header row
+  for (let i = 1; i < rows.length; i++) {
+    const [word, translation, note, firstDate, lastDate, count] = rows[i];
+
+    if (!word) continue;
+
+    const k = keyFor(word);
+
+    entries[k] = {
+      ru: word,
+      en: translation || "?",
+      note: note || "",
+      firstDate: firstDate || todayStr(),
+      lastDate: lastDate || todayStr(),
+      count: Number(count) || 1
+    };
+
+    try {
+      await saveEntry(k, entries[k]);
+    } catch (e) {
+      console.error("Import failed:", e);
+    }
+  }
+
+  feed = [];
+  renderAll();
+
+  alert("CSV imported successfully!");
+}
+
   addBtn.addEventListener("click", handleQuickAdd);
   translationInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleQuickAdd(); });
   processBtn.addEventListener("click", handleBatch);
   exportBtn.addEventListener("click", handleExport);
+importBtn.addEventListener("click", () => {
+  importFile.click();
+});
+
+importFile.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  await handleImport(file);
+
+  importFile.value = "";
+});
   searchInput.addEventListener("input", renderLedger);
   sortSelect.addEventListener("change", renderLedger);
 
-  loadEntries();
-  renderAll();
+  // =========================================================================
+  // AUTH
+  // =========================================================================
+  function setAuthMode(mode) {
+    authMode = mode;
+    authError.textContent = "";
+    if (mode === "signup") {
+      authSubmitBtn.textContent = "create account";
+      authSwitchBtn.textContent = "already have an account? sign in";
+      authHint.textContent = "pick an email + password — this is just for you.";
+    } else {
+      authSubmitBtn.textContent = "sign in";
+      authSwitchBtn.textContent = "need an account? sign up";
+      authHint.textContent = "sign in to sync your ledger across every device.";
+    }
+  }
+  authSwitchBtn.addEventListener("click", () => setAuthMode(authMode === "signin" ? "signup" : "signin"));
+
+  async function handleAuthSubmit() {
+    authError.textContent = "";
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    if (!email || !password) {
+      authError.textContent = "Enter both email and password.";
+      return;
+    }
+    authSubmitBtn.disabled = true;
+    try {
+      if (authMode === "signup") {
+        await auth.createUserWithEmailAndPassword(email, password);
+      } else {
+        await auth.signInWithEmailAndPassword(email, password);
+      }
+    } catch (e) {
+      authError.textContent = e.message || "Something went wrong.";
+    } finally {
+      authSubmitBtn.disabled = false;
+    }
+  }
+  authSubmitBtn.addEventListener("click", handleAuthSubmit);
+  authPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") handleAuthSubmit(); });
+
+  signOutBtn.addEventListener("click", () => auth.signOut());
+
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      authScreen.style.display = "none";
+      appContent.style.display = "";
+      accountEmail.textContent = user.email || "";
+      authEmail.value = "";
+      authPassword.value = "";
+      setSyncStatus("connecting");
+      startListening();
+    } else {
+      appContent.style.display = "none";
+      authScreen.style.display = "";
+      stopListening();
+      renderAll();
+    }
+  });
 })();
 </script>
+<script src="practice.js"></script>
 </body>
 </html>
