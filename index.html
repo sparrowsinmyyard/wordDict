@@ -157,13 +157,255 @@ td.del { text-align: right; }
 #authScreen label { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E6858; display: block; margin: 10px 0 4px; }
 #authScreen .row { margin-top: 16px; justify-content: space-between; }
 .link-btn { background: none; border: none; color: #3F6B4A; text-decoration: underline; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 0; }
-.account-bar { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E6858; display: flex; gap: 10px; align-items: center; }
+.account-bar { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E6858; display: flex; gap: 10px; margin-right: 160px; align-items: center; }
 .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #C9C2AE; margin-right: 4px; }
 .sync-dot.ok { background: #3F6B4A; }
 .sync-dot.err { background: #B23A2E; }
+
+/* ===== Left-edge personal menu ===== */
+.wl-menu-trigger {
+  position: fixed;
+  left: 0;
+  top: 28px;
+  transform: none;
+  z-index: 10001;
+  width: 48px;
+  height: 64px;
+  border: 1px solid #232032;
+  border-left: none;
+  border-radius: 0 5px 5px 0;
+  background: #232032;
+  color: #F3EEE3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 5px 8px 20px rgba(35,32,50,.22);
+  transition: width .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+
+.wl-menu-trigger.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wl-menu-trigger:hover,
+.wl-menu-trigger:focus-visible {
+  width: 54px;
+  box-shadow: 6px 10px 24px rgba(35,32,50,.28);
+  outline: none;
+}
+
+.wl-menu-trigger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  margin: 3px 0;
+  background: #F3EEE3;
+  border-radius: 2px;
+}
+
+.wl-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(35,32,50,.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+
+.wl-menu-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wl-side-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: min(330px, 86vw);
+  padding: 34px 28px 30px;
+  background: #F3EEE3;
+  border-right: 1px solid #C9C2AE;
+  box-shadow: 14px 0 40px rgba(35,32,50,.16);
+  transform: translateX(-105%);
+  transition: transform .32s cubic-bezier(.22,.61,.36,1);
+  overflow-y: auto;
+}
+
+.wl-menu-backdrop.show .wl-side-panel {
+  transform: translateX(0);
+}
+
+.wl-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.wl-side-title {
+  font-family: 'Kalam', cursive;
+  font-size: 30px;
+  font-weight: 700;
+  transform: rotate(-.6deg);
+}
+
+.wl-side-close {
+  border: none;
+  background: none;
+  color: #232032;
+  font-size: 25px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.wl-side-section {
+  margin-bottom: 30px;
+}
+
+.wl-side-heading {
+  margin: 0 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #6E6858;
+}
+
+.wl-side-links {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.wl-side-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px;
+  border: 1px solid #C9C2AE;
+  border-radius: 3px;
+  background: #FFFDF8;
+  color: #232032;
+  text-decoration: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.wl-side-link:hover,
+.wl-side-link:focus-visible {
+  transform: translateX(3px);
+  border-color: #6E6858;
+  background: #FFFDF8;
+  outline: none;
+}
+
+.wl-side-link .wl-arrow {
+  color: #6E6858;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .wl-menu-trigger {
+    width: 46px;
+    height: 60px;
+  }
+
+  .wl-side-panel {
+    width: min(320px, 88vw);
+    padding: 28px 22px;
+  }
+}
+
+.website-credit {
+    position: absolute;
+    right: 220px;
+    bottom: 480px;
+
+    display: flex;
+    flex-direction: column;
+
+    text-align: left;
+
+    color: #000;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.25;
+
+    z-index: 999;
+}
+
+.website-credit span {
+    font-size: 15px;
+    letter-spacing: 0.8px;
+    text-transform: lowercase;
+}
+
+.website-credit strong {
+    font-size: 25px;
+    font-weight: 500;
+}
+
 </style>
 </head>
 <body>
+
+<!-- ===== Personal side menu ===== -->
+<button class="wl-menu-trigger" id="wlMenuTrigger" aria-label="Open menu" aria-controls="wlMenuBackdrop" aria-expanded="false">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
+<div class="wl-menu-backdrop" id="wlMenuBackdrop" aria-hidden="true">
+  <aside class="wl-side-panel" aria-label="Personal links">
+    <div class="wl-side-header">
+      <div class="wl-side-title">little menu</div>
+      <button class="wl-side-close" id="wlMenuClose" aria-label="Close menu">✕</button>
+    </div>
+
+    <section class="wl-side-section">
+      <h2 class="wl-side-heading">socials</h2>
+      <div class="wl-side-links">
+        <a class="wl-side-link" href="https://www.youtube.com/watch?v=xu-t3tqDyAY&pp=ygUQZXRoZWwgY2FpbiBjcnVzaA%3D%3D" target="_blank" rel="noopener noreferrer">
+          <span>Instagram</span>
+          <span class="wl-arrow">↗</span>
+        </a>
+        <a class="wl-side-link" href="https://in.pinterest.com/missyoubetelgeuse/" target="_blank" rel="noopener noreferrer">
+          <span>Pinterest</span>
+          <span class="wl-arrow">↗</span>
+        </a>
+        <a class="wl-side-link" href="https://open.spotify.com/user/2fnv49vuuumspk54sy9km9ye9?si=70253c011ac648ef&nd=1&dlsi=13e2bbcc7cd745af" target="_blank" rel="noopener noreferrer">
+          <span>Spotify</span>
+          <span class="wl-arrow">↗</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="wl-side-section">
+      <h2 class="wl-side-heading">my other works</h2>
+      <div class="wl-side-links">
+        <a class="wl-side-link" href="https://sparrowsinmyyard.github.io/studyTour/" target="_blank" rel="noopener noreferrer">
+          <span>studyTour</span>
+          <span class="wl-arrow">↗</span>
+        </a>
+        <a class="wl-side-link" href="https://sparrowsinmyyard.github.io/alltheKingsmen/" target="_blank" rel="noopener noreferrer">
+          <span>all the king's men</span>
+          <span class="wl-arrow">↗</span>
+        </a>
+      </div>
+    </section>
+  </aside>
+</div>
+
 
 <!-- ============ LOGIN / SIGNUP SCREEN ============ -->
 <div id="authScreen">
@@ -698,5 +940,54 @@ importFile.addEventListener("change", async (e) => {
 })();
 </script>
 <script src="practice.js"></script>
+
+<script>
+  // ===== Personal side menu =====
+  (() => {
+    const trigger = document.getElementById("wlMenuTrigger");
+    const backdrop = document.getElementById("wlMenuBackdrop");
+    const close = document.getElementById("wlMenuClose");
+
+    function openMenu() {
+      backdrop.classList.add("show");
+      backdrop.setAttribute("aria-hidden", "false");
+      trigger.setAttribute("aria-expanded", "true");
+      trigger.classList.add("is-hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeMenu() {
+      backdrop.classList.remove("show");
+      backdrop.setAttribute("aria-hidden", "true");
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.classList.remove("is-hidden");
+      document.body.style.overflow = "";
+    }
+
+    trigger.addEventListener("click", openMenu);
+    close.addEventListener("click", closeMenu);
+
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) closeMenu();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && backdrop.classList.contains("show")) {
+        closeMenu();
+      }
+    });
+  })();
+</script>
+
+<script src="practice.js"></script>
+
+<div class="website-credit">
+    <span>website by</span>
+    <strong>Aryan Patel :)</strong>
+</div>
+
+</body>
+</html>
+
 </body>
 </html>
